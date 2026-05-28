@@ -6,7 +6,8 @@ from fastapi.middleware.cors import CORSMiddleware
 # Import passlib for security
 from passlib.context import CryptContext
 
-app = FastAPI()
+# Change this line
+app = FastAPI(docs_url="/docs", redoc_url="/redoc")
 
 # Initialize the hashing context
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
