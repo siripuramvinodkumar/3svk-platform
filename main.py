@@ -6,17 +6,18 @@ from fastapi.middleware.cors import CORSMiddleware
 # Import passlib for security
 from passlib.context import CryptContext
 
-app = FastAPI()
+# Change this line
+app = FastAPI(docs_url="/docs", redoc_url="/redoc")
 
 # Initialize the hashing context
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
-# CORS middleware configuration
+# CORS middleware configuration - Set to "*" for debugging to rule out origin issues
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST", "OPTIONS", "HEAD"],
     allow_headers=["*"],
 )
 
@@ -36,7 +37,8 @@ class User(BaseModel):
     password: str
     email: str
 
-@app.get("/")
+# Updated to explicitly handle multiple methods to fix 405 errors
+@app.api_route("/", methods=["GET", "HEAD", "OPTIONS"])
 def read_root():
     return {"message": "Hello! 3SVK Platform is live."}
 
