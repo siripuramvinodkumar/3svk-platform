@@ -2,23 +2,27 @@ import os
 from fastapi import FastAPI
 from pydantic import BaseModel
 from libsql_client import create_client
-from fastapi.middleware.cors import CORSMiddleware  # 1. Import this
+from fastapi.middleware.cors import CORSMiddleware
+# Import passlib for security
+from passlib.context import CryptContext
 
 app = FastAPI()
 
-# 2. Add the CORS middleware block
+# Initialize the hashing context
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+# CORS middleware configuration
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Allows all origins (your GitHub Codespace domain)
+    allow_origins=["*"],
     allow_credentials=True,
-    allow_methods=["*"],  # Allows all methods (POST, GET, etc.)
-    allow_headers=["*"],  # Allows all headers
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
-# Define the global variable
+# Global database variable
 db = None
 
-# Use the startup event to initialize the database
 @app.on_event("startup")
 async def startup():
     global db
@@ -38,7 +42,13 @@ def read_root():
 
 @app.post("/register")
 async def register_user(user: User):
+    # 1. Hash the password before saving it to the database
+    hashed_password = pwd_context.hash(user.password)
+    
+    # 2. Use the hashed_password in the query
     query = "INSERT INTO users (username, password_hash, email) VALUES (?, ?, ?)"
-    # Use the global db here
-    await db.execute(query, (user.username, user.password, user.email))
+    
+    # 3. Execute the database operation
+    await db.execute(query, (user.username, hashed_password, user.email))
+    
     return {"message": "User registered successfully"}
