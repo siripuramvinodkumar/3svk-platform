@@ -1,9 +1,19 @@
+import os
 from fastapi import FastAPI
 from pydantic import BaseModel
 from libsql_client import create_client
-import os
+from fastapi.middleware.cors import CORSMiddleware  # 1. Import this
 
 app = FastAPI()
+
+# 2. Add the CORS middleware block
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Allows all origins (your GitHub Codespace domain)
+    allow_credentials=True,
+    allow_methods=["*"],  # Allows all methods (POST, GET, etc.)
+    allow_headers=["*"],  # Allows all headers
+)
 
 # Define the global variable
 db = None
