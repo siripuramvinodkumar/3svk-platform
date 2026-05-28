@@ -5,10 +5,17 @@ import os
 
 app = FastAPI()
 
-db = create_client(
-    url=os.environ["TURSO_DATABASE_URL"],
-    auth_token=os.environ["TURSO_AUTH_TOKEN"]
-)
+# Define the global variable
+db = None
+
+# Use the startup event to initialize the database
+@app.on_event("startup")
+async def startup():
+    global db
+    db = create_client(
+        url=os.environ["TURSO_DATABASE_URL"],
+        auth_token=os.environ["TURSO_AUTH_TOKEN"]
+    )
 
 class User(BaseModel):
     username: str
@@ -22,5 +29,6 @@ def read_root():
 @app.post("/register")
 async def register_user(user: User):
     query = "INSERT INTO users (username, password_hash, email) VALUES (?, ?, ?)"
+    # Use the global db here
     await db.execute(query, (user.username, user.password, user.email))
     return {"message": "User registered successfully"}
