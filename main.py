@@ -11,13 +11,12 @@ app = FastAPI()
 # Initialize the hashing context
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
-# CORS middleware configuration
+# CORS middleware configuration - Set to "*" for debugging to rule out origin issues
 app.add_middleware(
     CORSMiddleware,
-    # Restricted to your production frontend URL for better security
-    allow_origins=["https://3svk-platform.vercel.app"],
+    allow_origins=["*"],
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST", "OPTIONS", "HEAD"],
     allow_headers=["*"],
 )
 
@@ -37,7 +36,8 @@ class User(BaseModel):
     password: str
     email: str
 
-@app.get("/")
+# Updated to explicitly handle multiple methods to fix 405 errors
+@app.api_route("/", methods=["GET", "HEAD", "OPTIONS"])
 def read_root():
     return {"message": "Hello! 3SVK Platform is live."}
 
