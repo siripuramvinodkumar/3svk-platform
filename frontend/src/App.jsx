@@ -8,7 +8,7 @@ function App() {
     e.preventDefault();
     try {
       // Sending the form data to your live FastAPI backend
-      const response = await axios.post('https://threesvk-platform.onrender.com/register', formData);
+      const response = await axios.post('https://3svk-platform.onrender.com/register', formData);
       alert("Success: " + response.data.message);
     } catch (error) {
       alert("Error: Registration failed. Please check the console.");
