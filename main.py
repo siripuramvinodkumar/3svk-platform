@@ -1,18 +1,25 @@
 import os
-from fastapi import FastAPI
+import uuid
+import pandas as pd
+import io
+from datetime import datetime
+from fastapi import FastAPI, UploadFile, File
 from pydantic import BaseModel
 from libsql_client import create_client
 from fastapi.middleware.cors import CORSMiddleware
-# Import passlib for security
 from passlib.context import CryptContext
+import firebase_admin
+from firebase_admin import credentials, firestore
 
-# Change this line
+# Firebase Initialization
+cred = credentials.Certificate("serviceAccountKey.json")
+firebase_admin.initialize_app(cred)
+db_firestore = firestore.client()
+
+# FastAPI Initialization
 app = FastAPI(docs_url="/docs", redoc_url="/redoc")
-
-# Initialize the hashing context
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
-# CORS middleware configuration - Set to "*" for debugging to rule out origin issues
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -21,7 +28,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Global database variable
 db = None
 
 @app.on_event("startup")
@@ -37,20 +43,30 @@ class User(BaseModel):
     password: str
     email: str
 
-# Updated to explicitly handle multiple methods to fix 405 errors
 @app.api_route("/", methods=["GET", "HEAD", "OPTIONS"])
 def read_root():
     return {"message": "Hello! 3SVK Platform is live."}
 
 @app.post("/register")
 async def register_user(user: User):
-    # 1. Hash the password before saving it to the database
     hashed_password = pwd_context.hash(user.password)
-    
-    # 2. Use the hashed_password in the query
     query = "INSERT INTO users (username, password_hash, email) VALUES (?, ?, ?)"
-    
-    # 3. Execute the database operation
     await db.execute(query, (user.username, hashed_password, user.email))
-    
     return {"message": "User registered successfully"}
+
+@app.post("/upload-bulk-credentials")
+async def bulk_upload(file: UploadFile = File(...)):
+    contents = await file.read()
+    df = pd.read_csv(io.StringIO(contents.decode('utf-8')))
+    results = []
+    for _, row in df.iterrows():
+        cert_id = str(uuid.uuid4())
+        db_firestore.collection("verifiable_credentials").document(cert_id).set({
+            "student_name": row['name'],
+            "email": row['email'],
+            "skill": row['skill'],
+            "status": "active",
+            "issued_at": datetime.now()
+        })
+        results.append(cert_id)
+    return {"message": f"Successfully processed {len(df)} credentials.", "ids": results}
