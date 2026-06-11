@@ -2,3 +2,6 @@ fastapi
 uvicorn
 libsql-client
 passlib[bcrypt]
+pandas
+python-multipart
+firebase-admin
